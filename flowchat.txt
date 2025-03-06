@@ -1,0 +1,33 @@
+Here's a flowchart representing the project workflow:
+
+    User Input
+        Topic
+        Primary Keyword
+        Desired Article Length
+
+    Knowledge Base Setup
+        Collect relevant documents (e.g., Wikipedia)
+        Preprocess & split into chunks
+        Embed using SentenceTransformer
+        Store in a vector database (e.g., Faiss)
+
+    Retrieval Mechanism
+        Embed user query
+        Retrieve top N relevant documents
+        Return retrieved text for context
+
+    Content Generation
+        Construct prompt with retrieved text
+        Define SEO guidelines in the prompt
+        Generate content using GPT-4o-Mini
+
+    SEO Optimization
+        Title Optimization
+        Keyword Density Check
+        Meta Description Compliance
+        Structured Content with Headers
+
+    FastAPI Implementation
+        Create API endpoint (/generate_content)
+        Handle async requests
+        Return structured JSON response
