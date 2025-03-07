@@ -1,14 +1,15 @@
 import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import wikipedia
-from sentence_transformers import SentenceTransformer
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
 from dotenv import load_dotenv
+import logging, psutil
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Sample prompt:
     # Requirements:
@@ -24,10 +25,29 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+class OpenAIEmbedder:
+    def __init__(self, client, model="text-embedding-3-small"):
+        self.client = client
+        self.model = model
+
+    def encode(self, text):
+        if isinstance(text, str):
+            input_list = [text]
+        else:
+            input_list = text
+        response = self.client.embeddings.create(
+            input=input_list,
+            model=self.model
+        )
+
+        return [data.embedding for data in response.data]
+
 # Initialize models and clients
-EMBEDDER = SentenceTransformer('all-MiniLM-L6-v2')
+# EMBEDDER = SentenceTransformer('all-MiniLM-L6-v2')
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app = FastAPI()
+
+EMBEDDER = OpenAIEmbedder(client)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,12 +57,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
+# app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/")
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def home():
+    # return templates.TemplateResponse("index.html", {"request": request})
+    process = psutil.Process(os.getpid())
+    memory_info = process.memory_info()
+    logger.info(f"Memory used: {memory_info.rss / 1024 / 1024:.2f} MB")
+    return {"message": "Welcome to the SEO Content Generator API!"}
 
 class ContentRequest(BaseModel):
     topic: str
@@ -50,6 +74,9 @@ class ContentRequest(BaseModel):
     length: int = 1000
 
 class ContentResponse(BaseModel):
+    content: str
+
+class CommandRequest(BaseModel):
     content: str
 
 def get_wikipedia_content(topic: str):
@@ -98,6 +125,10 @@ async def generate_content(request: ContentRequest):
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
+
+    process = psutil.Process(os.getpid())
+    memory_info = process.memory_info()
+    logger.info(f"Memory used: {memory_info.rss / 1024 / 1024:.2f} MB")
     
     return parse_response(response.choices[0].message.content)
 
@@ -111,7 +142,8 @@ def parse_response(text: str):
     }
 
 @app.post("/add-more", response_model=ContentResponse)
-async def add_more(content: str):
+async def add_more(request: CommandRequest):
+    content = request.content
     prompt = f"Add 30% more SEO optimized content to this: {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -121,7 +153,8 @@ async def add_more(content: str):
     return {"content": response.choices[0].message.content}
 
 @app.post("/paraphrase", response_model=ContentResponse)
-async def paraphrase(content: str):
+async def paraphrase(request: CommandRequest):
+    content = request.content
     prompt = f"Paraphrase this content to be SEO optimized: {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -131,7 +164,8 @@ async def paraphrase(content: str):
     return {"content": response.choices[0].message.content}
 
 @app.post("/improve", response_model=ContentResponse)
-async def improve(content: str):
+async def improve(request: CommandRequest):
+    content = request.content
     prompt = f"Improve this content to be SEO optimized: {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -141,7 +175,8 @@ async def improve(content: str):
     return {"content": response.choices[0].message.content}
 
 @app.post("/summarize", response_model=ContentResponse)
-async def summarize(content: str):
+async def summarize(request: CommandRequest):
+    content = request.content
     prompt = f"Summarize this content: {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -151,8 +186,9 @@ async def summarize(content: str):
     return {"content": response.choices[0].message.content}
 
 @app.post("/write-analogy", response_model=ContentResponse)
-async def write_analogy(content: str):
-    prompt = f"Write appropriate analogy for this content: {content}"
+async def write_analogy(request: CommandRequest):
+    content = request.content
+    prompt = f"Write appropriate analogy for this content (DO NOT MENTION ANY PREFIX LIKE 'Sure! Here’s an analogy that captures the essence of the content:'): {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
@@ -160,9 +196,10 @@ async def write_analogy(content: str):
 
     return {"content": response.choices[0].message.content}
 
-@app.post("/fix-grammer", response_model=ContentResponse)
-async def fix_grammer(content: str):
-    prompt = f"Fix grammer of this content, do not loose the sense of the content: {content}"
+@app.post("/fix-grammar", response_model=ContentResponse)
+async def fix_grammer(request: CommandRequest):
+    content = request.content
+    prompt = f"Fix grammar of this content, do not loose the sense of the content: {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
