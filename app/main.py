@@ -144,7 +144,7 @@ def parse_response(text: str):
 @app.post("/add-more", response_model=ContentResponse)
 async def add_more(request: CommandRequest):
     content = request.content
-    prompt = f"Add 30% more SEO optimized content to this: {content}"
+    prompt = f"Add 30% more SEO optimized content to this (DO NOT USE ANY PREFIX LIKE 'Here is 30% more content'): {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
@@ -155,7 +155,7 @@ async def add_more(request: CommandRequest):
 @app.post("/paraphrase", response_model=ContentResponse)
 async def paraphrase(request: CommandRequest):
     content = request.content
-    prompt = f"Paraphrase this content to be SEO optimized: {content}"
+    prompt = f"Paraphrase this content to be SEO optimized (DO NOT USE ANY PREFIX LIKE 'Here is paraphrased version'): {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
@@ -166,7 +166,7 @@ async def paraphrase(request: CommandRequest):
 @app.post("/improve", response_model=ContentResponse)
 async def improve(request: CommandRequest):
     content = request.content
-    prompt = f"Improve this content to be SEO optimized: {content}"
+    prompt = f"Improve this content to be SEO optimized (DO NOT USE ANY PREFIX LIKE 'Here is improved version'): {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
@@ -177,7 +177,7 @@ async def improve(request: CommandRequest):
 @app.post("/summarize", response_model=ContentResponse)
 async def summarize(request: CommandRequest):
     content = request.content
-    prompt = f"Summarize this content: {content}"
+    prompt = f"Summarize this content (DO NOT MENTION ANY PREFIX LIKE 'Here is the summary'): {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
@@ -199,7 +199,7 @@ async def write_analogy(request: CommandRequest):
 @app.post("/fix-grammar", response_model=ContentResponse)
 async def fix_grammer(request: CommandRequest):
     content = request.content
-    prompt = f"Fix grammar of this content, do not loose the sense of the content: {content}"
+    prompt = f"Fix grammar of this content, do not loose the sense of the content & do not use any prefix like 'Sure! Here is corrected sentence': {content}"
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
